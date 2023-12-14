@@ -1,11 +1,11 @@
 from unittest.mock import Mock
 
-from ai_care.abilities import Ability, _ability_description
+from ai_care.abilities import Ability, _ability
 
 
-def test_register_abilities():
+def test_auto_register_abilities():
     class FakeAbility(Ability):
-        @_ability_description(
+        @_ability(
             description="Fake_ability_description"
         )
         def fake_ability(self) -> str:
@@ -16,14 +16,14 @@ def test_register_abilities():
 
     fake_ability = FakeAbility(Mock())
 
-    abilities_list = [ability.__name__ for ability in fake_ability.abilities]
+    abilities_list = list(fake_ability.abilities.keys())
     
     assert "fake_ability" in abilities_list
     assert "not_ability" not in abilities_list
 
     result = []
-    for ability in fake_ability.abilities:
-        if ability.__name__ == "fake_ability":
+    for name, ability in fake_ability.abilities.items():
+        if name == "fake_ability":
             assert ability._ability_description_ == "Fake_ability_description"
             result.append(ability())
 

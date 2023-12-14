@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Generator, Callable, cast
 
 
 if TYPE_CHECKING:
-    from .ai_care import AiCare
+    from .ai_care import AICare
 
 
 @unique
@@ -74,7 +74,7 @@ def _auto_depth(depth_param_name: str = "_depth_left"):
     
 
 class Ability:
-    def __init__(self, ai_care: AiCare):
+    def __init__(self, ai_care: AICare):
         self.ai_care = ai_care
         self.abilities: dict = {}
         self._register_abilities()
@@ -95,15 +95,13 @@ class Ability:
     )
     @_ability_parameter(
         name="content",
-        description="The content you want to sya.",
+        description="The content you want to say.",
     )
     def speak_now(self, content: str | Generator[str, None, None]) -> None:
         if isinstance(content, str):
-            assert isinstance(self.ai_care.to_user_method, Callable[[str], None])
             self.ai_care.to_user_method = cast(Callable[[str], None], self.ai_care.to_user_method)
             self.ai_care.to_user_method(content)
-        if isinstance(content, Generator):
-            assert isinstance(self.ai_care.to_user_method, Callable[[Generator[str, None, None]], None])
+        elif isinstance(content, Generator):
             self.ai_care.to_user_method = cast(Callable[[Generator[str, None, None]], None], self.ai_care.to_user_method)
             self.ai_care.to_user_method(content)
         else:
@@ -227,9 +225,9 @@ class Ability:
     )
     @_auto_depth(depth_param_name="_depth_left")
     def ask_later(self, delay: int | float, _depth_left: int) -> None:
-        if self.ai_care._ask_count_left <= 0:
+        if self.ai_care._ask_later_count_left <= 0:
             return
-        self.ai_care._ask_count_left -= 1
+        self.ai_care._ask_later_count_left -= 1
         self.ai_care.set_timer(
             interval=delay,
             function=self.ai_care.ask,

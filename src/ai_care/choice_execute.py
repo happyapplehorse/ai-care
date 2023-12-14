@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import logging
 from typing import TYPE_CHECKING, Generator
@@ -9,10 +10,10 @@ logger = logging.getLogger("ai_care")
 
 
 if TYPE_CHECKING:
-    from .ai_care import AiCare
+    from .ai_care import AICare
 
 
-def choice_execute(ai_care: AiCare, choice_code: str, content: str | Generator[str, None, None], depth_left: int) -> None:
+def choice_execute(ai_care: AICare, choice_code: str, content: str | Generator[str, None, None], depth_left: int) -> None:
     try:
         choice = Choice(choice_code)
     except ValueError as e:
@@ -43,11 +44,21 @@ def choice_execute(ai_care: AiCare, choice_code: str, content: str | Generator[s
                 "content": f"AA00{choice_code}{choice_code}:{content}",
             }
         )
-    else:
+    elif isinstance(content, Generator):
         # This case has been handled in parse_response.
         pass
+    else:
+        assert False
 
-    if choice not in {Choice.SPEAK_NOW, Choice.STAY_SILENT}:
+    ability_method = ai_care.ability.abilities[choice.name.lower()]
+    
+    if choice == Choice.STAY_SILENT:
+        ability_method()
+        return
+    
+    if choice == Choice.SPEAK_NOW:
+        params = {"content": content}
+    else:
         assert isinstance(content, str)
         try:
             params = json.loads(content)
@@ -80,10 +91,8 @@ def choice_execute(ai_care: AiCare, choice_code: str, content: str | Generator[s
                 ],
                 depth_left = depth_left - 1,
             )
-    else:
-        params = {"content": content}
+            return
 
-    ability_method = ai_care.ability.abilities[choice.name.lower()]
     ability_params = {}
     for param in ability_method._ability_parameters_:
         default_value = param["default_value"]

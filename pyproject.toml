@@ -36,10 +36,10 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 pythonpath = "src"
 
-[tool.setuptools]
-package_dir = {"": "src"}
-packages = find:
-  where = ["src"]
+#[tool.setuptools]
+#package_dir = {"": "src"}
+#packages = find:
+#  where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "ai_care.__version__"}

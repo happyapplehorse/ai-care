@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Generator, cast
 
@@ -5,14 +6,14 @@ from .abilities import Choice
 
 
 if TYPE_CHECKING:
-    from .ai_care import AiCare
+    from .ai_care import AICare
 
 
 logger = logging.getLogger("ai_care")
 
 
 def parse_response(
-    ai_care: AiCare,
+    ai_care: AICare,
     response: str | Generator[str, None, None],
 ) -> tuple[str, str | Generator[str, None, None]]:
     choice_code = ""

@@ -7,16 +7,17 @@ from abc import ABCMeta, abstractmethod
 from threading import Thread
 from typing import Callable, Any, Generator, TypedDict, Literal
 
-from .abilities import Ability, Choice
-from .parse_response import parse_response
+from .abilities import Ability
 from .choice_execute import choice_execute
+from .parse_response import parse_response
+from .render_prompt import render_basic_prompt
 
 
 logger = logging.getLogger("ai_care")
 ChatContext = Any
 
 
-class AiCare:
+class AICare:
 
     def __init__(self) -> None:
         self.detectors: dict[str, Detector] = {}
@@ -25,8 +26,8 @@ class AiCare:
         self.ability: Ability = Ability(self)
         self.chat_context: Any = None
         self.to_llm_method: (
-            Callable[[ChatContext, list[AiCareContext]], str] |
-            Callable[[ChatContext, list[AiCareContext]], Generator[str, None, None]]
+            Callable[[ChatContext, list[AICareContext]], str] |
+            Callable[[ChatContext, list[AICareContext]], Generator[str, None, None]]
         ) = self._fake_to_llm_method
         self.to_user_method: (
             Callable[[str], None] |
@@ -37,12 +38,12 @@ class AiCare:
         self._last_chat_time: float | None = None
         self._chat_intervals: list[float] = []
         self._tags: dict[str, list[Detector]] = {}
-        self._config: dict[str, Any] = {"delay": 100, "ask_later_limit": 1, "ask_depth": 1, "n_chat_intervals": 20}
-        self._ask_count_left = 1
+        self._config: dict[str, Any] = {"delay": 100, "ask_later_count_limit": 1, "ask_depth": 1, "n_chat_intervals": 20}
+        self._ask_later_count_left = 1
         self._valid_msg_count: int = 0
         self._invalid_msg_count: int = 0
         self._stream_mode: bool = True
-        self._ask_context: list[AiCareContext] = []
+        self._ask_context: list[AICareContext] = []
     
     @property
     def health(self) -> float:
@@ -61,7 +62,7 @@ class AiCare:
         """
         self.guide = guide
 
-    def _fake_to_llm_method(self, chat_context: ChatContext, to_llm_messages: list[AiCareContext]) -> str:
+    def _fake_to_llm_method(self, chat_context: ChatContext, to_llm_messages: list[AICareContext]) -> str:
         raise NotImplementedError("'to_llm_method' method has not been implemented yet.")
     
     def _fake_to_user_method(self, to_user_message: str) -> None:
@@ -69,16 +70,16 @@ class AiCare:
 
     def register_to_llm_method(
         self,
-        to_llm_method: Callable[[ChatContext, list[AiCareContext]], str] | Callable[[ChatContext, list[AiCareContext]], Generator[str, None, None]],
+        to_llm_method: Callable[[ChatContext, list[AICareContext]], str] | Callable[[ChatContext, list[AICareContext]], Generator[str, None, None]],
     ) -> None:
-        """Register the method used by AiCare to send message to llm."""
+        """Register the method used by AICare to send message to llm."""
         self.to_llm_method = to_llm_method
 
     def register_to_user_method(
         self,
         to_user_method: Callable[[str], None] | Callable[[Generator[str, None, None]], None],
     ) -> None:
-        """Register the method used by AiCare to send message to user."""
+        """Register the method used by AICare to send message to user."""
         self.to_user_method = to_user_method
 
     def chat_update(self, chat_context: ChatContext) -> None:
@@ -87,10 +88,21 @@ class AiCare:
             self._insert_chat_interval(time_now - self._last_chat_time)
         self._last_chat_time = time_now
         self.chat_context = chat_context
-        self._ask_count_left = self._config["ask_later_limit"]
+        self._ask_later_count_left = self._config["ask_later_count_limit"]
         self.clear_timer(clear_preserved=False)
         self._ask_context = []
-        self.set_timer(interval=self._config["delay"], function=self.ask, kwargs={"messages_list": []})
+        self.set_timer(
+            interval=self._config["delay"],
+            function=self.ask,
+            kwargs={
+                "messages_list": [
+                    {
+                        "role": "ai_care",
+                        "content": render_basic_prompt(self),
+                    }
+                ],
+            },
+        )
 
     def _insert_chat_interval(self, interval: float) -> None:
         if len(self._chat_intervals) >= self._config["n_chat_intervals"]:
@@ -99,8 +111,8 @@ class AiCare:
 
     def set_config(self, key: str, value: Any) -> None:
         # Valid check.
-        if key not in {"delay", "ask_later_limit", "ask_depth", "n_chat_intervals"}:
-            raise TypeError(f"AiCare does not accept {key} as a config.")
+        if key not in {"delay", "ask_later_count_limit", "ask_depth", "n_chat_intervals"}:
+            raise TypeError(f"AICare does not accept {key} as a config.")
         self._config[key] = value
 
     def set_timer(
@@ -147,7 +159,7 @@ class AiCare:
 
     def ask(
         self,
-        messages_list: list[AiCareContext],
+        messages_list: list[AICareContext],
         chat_context: ChatContext | None = None,
         depth_left: int | None = None
     ) -> None:
@@ -192,7 +204,7 @@ class AiCare:
 
     def event_trigger(
         self,
-        messages_list: list[AiCareContext] | None = None,
+        messages_list: list[AICareContext] | None = None,
         tag: str | None = None,
         chat_context: ChatContext | None = None,
         depth_left: int = 1
@@ -242,7 +254,7 @@ class Detector(metaclass=ABCMeta):
         self.name = name
         self.annotation = annotation
         self.tag = tag
-        self.ai_care: AiCare | None = None
+        self.ai_care: AICare | None = None
 
     @abstractmethod
     def detect(self) -> bool:
@@ -253,7 +265,7 @@ class Detector(metaclass=ABCMeta):
         self.detect()
 
 
-class AiCareContext(TypedDict):
+class AICareContext(TypedDict):
     role: Literal["ai_care", "assistant"]
     content: str
 
