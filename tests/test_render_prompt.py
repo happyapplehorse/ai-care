@@ -2,7 +2,8 @@ import textwrap
 from enum import Enum
 from unittest.mock import Mock, patch
 
-from ai_care.render_prompt import _render_ability_description
+from ai_care import AICare
+from ai_care.render_prompt import _render_ability_description, render_basic_prompt
 
 
 def test_render_ability_description():
@@ -54,6 +55,7 @@ def test_render_ability_description():
         Choice code: 01
         Choice description: ability stay silent have no parameter
         Choice content: Empty
+
         """
     )
     assert prompt2 == textwrap.dedent(
@@ -61,6 +63,7 @@ def test_render_ability_description():
         Choice code: 02
         Choice description: ability speak now is not a form of parameter calling; it derectly provides content
         Choice content: The content you want to say
+
         """
     )
     assert prompt3 == textwrap.dedent(
@@ -80,3 +83,8 @@ def test_render_ability_description():
 
         """
     )
+
+def test_render_basic_prompt():
+    ai_care = AICare()
+    prompt = render_basic_prompt(ai_care)
+    assert isinstance(prompt, str)

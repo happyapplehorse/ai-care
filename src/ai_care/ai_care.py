@@ -20,8 +20,8 @@ ChatContext = Any
 class AICare:
 
     def __init__(self) -> None:
-        self.detectors: dict[str, Detector] = {}
         self.timers: dict[int, Timer] = {}
+        self.detectors: dict[str, Detector] = {}
         self.sensors: dict[str, dict] = {}
         self.ability: Ability = Ability(self)
         self.chat_context: Any = None
@@ -49,6 +49,13 @@ class AICare:
     def health(self) -> float:
         return self._valid_msg_count / (self._valid_msg_count + self._invalid_msg_count)
 
+    def reset(self) -> None:
+        self._valid_msg_count = 0
+        self._invalid_msg_count = 0
+        self._last_chat_time = None
+        self._chat_intervals = []
+        self.clear_timer(clear_preserved=True)
+
     def set_guide(self, guide: str) -> None:
         """Set guidance information.
 
@@ -60,6 +67,8 @@ class AICare:
             - You are a very considerate person who cares about others and is willing to initiate conversations.
             - You are someone who does not like to meddle in others' affairs, and you do not talk much unless necessary.
         """
+        if not isinstance(guide, str):
+            raise TypeError(f"Expected a guide of string type, but received a guide of type {type(guide)}.")
         self.guide = guide
 
     def _fake_to_llm_method(self, chat_context: ChatContext, to_llm_messages: list[AICareContext]) -> str:
@@ -202,7 +211,7 @@ class AICare:
         except StopIteration:
             pass
 
-    def event_trigger(
+    def trigger(
         self,
         messages_list: list[AICareContext] | None = None,
         tag: str | None = None,
@@ -236,7 +245,7 @@ class AICare:
             detector = self.detectors[name]
             Thread(target=detector.release).start()
 
-    def register_sensor(self, name: str, function: Callable, annotation: str) -> None:
+    def register_sensor(self, name: str, function: Callable[[], Any], annotation: str) -> None:
         if name in self.sensors:
             raise ValueError(f"The sensor named {name} has already been registered.")
         self.sensors[name] = {"name": name, "function": function, "annotation": annotation}
