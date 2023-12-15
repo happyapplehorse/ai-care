@@ -1,11 +1,15 @@
 from __future__ import annotations
 import inspect
+import logging
 from enum import Enum, unique
 from typing import TYPE_CHECKING, Generator, Callable, cast
 
 
 if TYPE_CHECKING:
     from .ai_care import AICare
+
+
+logger = logging.getLogger("ai_care")
 
 
 @unique

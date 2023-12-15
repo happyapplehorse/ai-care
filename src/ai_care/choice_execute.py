@@ -36,6 +36,7 @@ def choice_execute(ai_care: AICare, choice_code: str, content: str | Generator[s
     if choice == Choice.ERROR:
         ai_care.ask(messages_list=[], depth_left = depth_left - 1)
         return
+    logger.info(f"Choice: {choice.name}")
 
     if isinstance(content, str):
         ai_care._ask_context.append(
@@ -120,4 +121,5 @@ def choice_execute(ai_care: AICare, choice_code: str, content: str | Generator[s
         )
         return
 
+    logger.info(f"Choice parameters: {str(ability_params)}")
     ability_method(**ability_params)

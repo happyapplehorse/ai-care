@@ -43,7 +43,7 @@ def parse_response(
             buffer += chunk
             if not found_choice:
                 prefix, content = _extract_info(buffer)
-            if all(prefix) and not found_choice:
+            if all(prefix) and len(buffer) >= 9 and not found_choice:
                 choice_code = prefix[2]
                 check_valid = prefix[3]
                 if choice_code == check_valid:
@@ -56,11 +56,12 @@ def parse_response(
                     logger.warning(f"Invalid choice {choice_code}. Error: {e}")
                     assert isinstance(choice_code, str)
                     return choice_code, ''
+                found_choice = True
                 if choice == Choice.SPEAK_NOW:
                     first_item = buffer[9:]
                     break
                 chunk_list.append(buffer[9:])
-                found_choice = True
+                continue
             if found_choice:
                 chunk_list.append(chunk)
         if found_choice is False:

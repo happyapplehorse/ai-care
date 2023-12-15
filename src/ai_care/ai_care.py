@@ -135,7 +135,7 @@ class AICare:
         args = args or ()
         kwargs = kwargs or {}
         id = next(self._unique_id)
-        timer = Timer(interval=interval, function=self._timer_wrap, args=(function, id, *args), kwargs=kwargs)
+        timer = Timer(interval=float(interval), function=self._timer_wrap, args=(function, id, *args), kwargs=kwargs)
         timer._preserve_ = preserve
         timer.start()
         self.timers[id] = timer
