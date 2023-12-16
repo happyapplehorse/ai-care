@@ -2,7 +2,7 @@ from __future__ import annotations
 import inspect
 import logging
 from enum import Enum, unique
-from typing import TYPE_CHECKING, Generator, Callable, cast
+from typing import TYPE_CHECKING, Generator
 
 
 if TYPE_CHECKING:
@@ -102,14 +102,7 @@ class Ability:
         description="The content you want to say.",
     )
     def speak_now(self, content: str | Generator[str, None, None]) -> None:
-        if isinstance(content, str):
-            self.ai_care.to_user_method = cast(Callable[[str], None], self.ai_care.to_user_method)
-            self.ai_care.to_user_method(content)
-        elif isinstance(content, Generator):
-            self.ai_care.to_user_method = cast(Callable[[Generator[str, None, None]], None], self.ai_care.to_user_method)
-            self.ai_care.to_user_method(content)
-        else:
-            assert False
+        self.ai_care.to_user_method(content)
 
     @_ability(
         description=(

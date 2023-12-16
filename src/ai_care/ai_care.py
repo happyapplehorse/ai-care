@@ -5,7 +5,7 @@ import time
 import threading
 from abc import ABCMeta, abstractmethod
 from threading import Thread
-from typing import Callable, Any, Generator, TypedDict, Literal
+from typing import Callable, Any, Generator, TypedDict, Literal, cast
 
 from .abilities import Ability
 from .choice_execute import choice_execute
@@ -25,11 +25,11 @@ class AICare:
         self.sensors: dict[str, dict] = {}
         self.ability: Ability = Ability(self)
         self.chat_context: Any = None
-        self.to_llm_method: (
+        self._to_llm_method: (
             Callable[[ChatContext, list[AICareContext]], str] |
             Callable[[ChatContext, list[AICareContext]], Generator[str, None, None]]
         ) = self._fake_to_llm_method
-        self.to_user_method: (
+        self._to_user_method: (
             Callable[[str], None] |
             Callable[[Generator[str, None, None]], None]
         ) = self._fake_to_user_method
@@ -44,16 +44,21 @@ class AICare:
         self._invalid_msg_count: int = 0
         self._stream_mode: bool = True
         self._ask_context: list[AICareContext] = []
+        self._task_num: int = 1
     
     @property
     def health(self) -> float:
         return self._valid_msg_count / (self._valid_msg_count + self._invalid_msg_count)
+
+    def cancel_current_task(self):
+        self._task_num += 1
 
     def reset(self) -> None:
         self._valid_msg_count = 0
         self._invalid_msg_count = 0
         self._last_chat_time = None
         self._chat_intervals = []
+        self.cancel_current_task()
         self.clear_timer(clear_preserved=True)
 
     def set_guide(self, guide: str) -> None:
@@ -82,16 +87,40 @@ class AICare:
         to_llm_method: Callable[[ChatContext, list[AICareContext]], str] | Callable[[ChatContext, list[AICareContext]], Generator[str, None, None]],
     ) -> None:
         """Register the method used by AICare to send message to llm."""
-        self.to_llm_method = to_llm_method
+        self._to_llm_method = to_llm_method
 
     def register_to_user_method(
         self,
         to_user_method: Callable[[str], None] | Callable[[Generator[str, None, None]], None],
     ) -> None:
         """Register the method used by AICare to send message to user."""
-        self.to_user_method = to_user_method
+        self._to_user_method = to_user_method
+
+    def to_llm_method(self, chat_context: ChatContext, messages_list: list[AICareContext]) -> str | Generator[str, None, None]:
+        return self._to_llm_method(chat_context, messages_list)
+
+    def to_user_method(self, message: str | Generator[str, None, None]) -> None:
+        if self._check_task_validity():
+            if isinstance(message, str):
+                self._to_user_method = cast(Callable[[str], None], self._to_user_method)
+                self._to_user_method(message)
+            elif isinstance(message, Generator):
+                self._to_user_method = cast(Callable[[Generator[str, None, None]], None], self._to_user_method)
+                self._to_user_method(message)
+            else:
+                assert False
+
+    def _check_task_validity(self) -> bool:
+        thread_instance = threading.current_thread()
+        assert isinstance(thread_instance, Timer)
+        _task_num = thread_instance._task_num
+        if _task_num < self._task_num:
+            return False
+        else:
+            return True
 
     def chat_update(self, chat_context: ChatContext) -> None:
+        self._task_num += 1
         time_now = time.monotonic()
         if self._last_chat_time is not None:
             self._insert_chat_interval(time_now - self._last_chat_time)
@@ -111,6 +140,7 @@ class AICare:
                     }
                 ],
             },
+            task_num=self._task_num,
         )
 
     def _insert_chat_interval(self, interval: float) -> None:
@@ -130,29 +160,45 @@ class AICare:
         function: Callable,
         args: tuple | None = None,
         kwargs: dict | None = None,
+        *,
         preserve: bool = False,
+        task_num: int | None = None,
     ) -> int:
         args = args or ()
         kwargs = kwargs or {}
         id = next(self._unique_id)
         timer = Timer(interval=float(interval), function=self._timer_wrap, args=(function, id, *args), kwargs=kwargs)
+        timer._task_num = task_num or self._get_task_num()
         timer._preserve_ = preserve
         timer.start()
         self.timers[id] = timer
         return id
 
-    def clear_timer(self, clear_preserved: bool = True):
+    def _get_task_num(self) -> int:
+        thread_instance = threading.current_thread()
+        task_num = getattr(thread_instance, '_task_num', self._task_num)
+        return task_num
+
+    def clear_timer(
+        self,
+        task_num_authority: int | None = None,
+        clear_preserved: bool = True,
+        default_task_num_authority_external: Literal["Highest", "Lowest"] = "Highest",
+    ) -> None:
         keys = list(self.timers.keys())
-        if clear_preserved is True:
-            for key in keys:
-                timer = self.timers.pop(key)
+        if task_num_authority is None:
+            thread_instance = threading.current_thread()
+            task_num_authority = getattr(
+                thread_instance,
+                '_task_num',
+                self._task_num if default_task_num_authority_external == "Highest" else 0,
+            )
+        
+        for key in keys:
+            timer = self.timers[key]
+            if timer._task_num <= task_num_authority and timer._preserve_ <= clear_preserved:
+                self.timers.pop(key)
                 timer.cancel()
-        else:
-            for key in keys:
-                timer = self.timers[key]
-                if timer._preserve_ is False:
-                    timer.cancel()
-                    self.timers.pop(key)
 
     def timer_cancel(self, id: int) -> None:
         timer = self.timers.pop(id, None)
@@ -177,12 +223,18 @@ class AICare:
         assert depth_left is not None
         if depth_left < 0:
             return
+        self.clear_timer(clear_preserved=False)
         if chat_context is None:
             chat_context = self.chat_context
         self._ask_context.extend(messages_list)
+        if not self._check_task_validity():
+            return
         response = self.to_llm_method(chat_context, self._ask_context)
-        self.clear_timer(clear_preserved=False)
+        if not self._check_task_validity():
+            return
         choice_code, content = parse_response(self, response)
+        if not self._check_task_validity():
+            return
         choice_execute(ai_care=self, choice_code=choice_code, content=content, depth_left=depth_left)
 
     def set_cyclic_detection(
@@ -283,3 +335,4 @@ class Timer(threading.Timer):
     def __init__(self, *args, preserve: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
         self._preserve_: bool = preserve
+        self._task_num: int = 0
