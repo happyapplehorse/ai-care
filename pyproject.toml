@@ -7,7 +7,7 @@ name = "ai-care"
 authors = [
   { name="Xueao Chao", email="chaoxueao@gmail.com" },
 ]
-description = ""
+description = "AI-Care endows AI with the capability to speak proactively. With simple settings, AI-Care allows your AI to proactively care for you."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
@@ -24,7 +24,7 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
 ]
-keywords = ["AI"]
+keywords = ["AI", "Proactive AI", "LLM"]
 dependencies = []
 
 [project.urls]
@@ -35,11 +35,6 @@ Issues = "https://github.com/happyapplehorse/ai-care/issues"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 pythonpath = "src"
-
-#[tool.setuptools]
-#package_dir = {"": "src"}
-#packages = find:
-#  where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "ai_care.__version__"}
