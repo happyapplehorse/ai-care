@@ -1,0 +1,287 @@
+import time
+from unittest.mock import Mock, patch
+
+from ai_care import AICare, Detector
+
+
+def test_set_timer():
+    # Setup
+    ai_care = AICare()
+    
+    callback = Mock()
+    callback_args = ("arg1", "arg2")
+    callback_kwargs = {"kwarg1": "value1", "kwarg2": "value2"}
+
+    # Actions
+    timer_id = ai_care.set_timer(interval=1, function=callback, args=callback_args, kwargs=callback_kwargs)
+
+    # Assert
+    assert timer_id in ai_care.timers
+    time.sleep(0.9)
+    assert not callback.called
+    time.sleep(0.2)
+    assert callback.called
+    assert callback.call_count == 1
+    callback.assert_called_with(*callback_args, **callback_kwargs)
+    assert timer_id not in ai_care.timers
+
+def test_timer_cancel():
+    # Setup
+    ai_care = AICare()
+    
+    callback = Mock()
+    callback_args = ("arg1", "arg2")
+    callback_kwargs = {"kwarg1": "value1", "kwarg2": "value2"}
+
+    # Actions
+    timer_id = ai_care.set_timer(interval=1, function=callback, args=callback_args, kwargs=callback_kwargs)
+
+    # Assert
+    assert timer_id in ai_care.timers
+
+    # Actions
+    time.sleep(0.5)
+    ai_care.timer_cancel(timer_id)
+
+    # Assert
+    assert timer_id not in ai_care.timers
+    time.sleep(0.6)
+    assert not callback.called
+
+def test_set_guide():
+    # Setup
+    ai_care = AICare()
+
+    # Actions
+    ai_care.set_guide("You are a considerate person who cars about others.")
+
+    # Assert
+    assert ai_care.guide == "You are a considerate person who cars about others."
+
+def test_task_num():
+    # Setup
+    ai_care = AICare()
+    ai_care._task_num = 5
+    
+    flag = 0
+    def callback(ai_care: AICare) -> None:
+        nonlocal flag
+        task_num = ai_care._get_task_num()
+        flag = task_num
+    
+    # Actions
+    ai_care.set_timer(interval=0.2, function=callback, args=(ai_care,), task_num=3)
+    time.sleep(0.4)
+
+    # Assert
+    assert ai_care._get_task_num() == 5
+    assert flag == 3
+
+    # Actions
+    ai_care.set_timer(interval=0.2, function=callback, args=(ai_care,))
+    time.sleep(0.4)
+
+    # Assert
+    assert flag == 5
+
+def test_clear_timer():
+    # Setup
+    ai_care = AICare()
+    callback1 = Mock()
+    callback2 = Mock()
+    callback3 = Mock()
+    callback4 = Mock()
+
+    # Actions
+    ai_care._task_num = 1
+    ai_care.set_timer(interval=0.1, function=callback1)
+    ai_care._task_num = 2
+    ai_care.set_timer(interval=0.1, function=callback2)
+    ai_care.clear_timer(task_num_authority=1)
+    time.sleep(0.2)
+
+    # Assert
+    assert not callback1.called
+    assert callback2.called
+
+    # Actions
+    def cancel_timer(ai_care: AICare):
+        ai_care.clear_timer()
+    ai_care._task_num = 1
+    ai_care.set_timer(interval=0.2, function=callback3)
+    ai_care.set_timer(interval=0.1, function=cancel_timer, kwargs={"ai_care": ai_care})
+    ai_care._task_num = 2
+    ai_care.set_timer(interval=0.2, function=callback4)
+    time.sleep(0.3)
+
+    # Assert
+    assert not callback3.called
+    assert callback4.called
+
+def test_insert_chat_interval():
+    # Setup
+    ai_care = AICare()
+
+    # Actions
+    for i in range(5):
+        ai_care._insert_chat_interval(i)
+
+    # Assert
+    assert [int(i) for i in ai_care._chat_intervals] == [0, 1, 2, 3, 4]
+    
+    # Actions
+    for i in range(1, 31):
+        ai_care._insert_chat_interval(i)
+
+    # Assert
+    assert [int(i) for i in ai_care._chat_intervals] == list(range(11, 31))
+
+def test_chat_update():
+    # Setup
+    ai_care = AICare()
+    mock_ask = Mock()
+    
+    # Actions
+    ai_care.set_config(key="delay", value=0.1)
+    ai_care.set_config(key="ask_later_count_limit", value=1)
+    ai_care.set_timer(interval=0.1, function=Mock())
+    ai_care.ask = mock_ask
+    ai_care.chat_update(chat_context=["chat_context"])
+    time.sleep(0.2)
+
+    # Assert
+    assert ai_care._task_num == 2
+    assert ai_care._chat_intervals == []
+    assert ai_care.chat_context == ["chat_context"]
+    assert ai_care._ask_later_count_left == 1
+    assert ai_care.timers == {}
+    assert mock_ask.called
+
+def test_reset():
+    # Setup
+    ai_care = AICare()
+    mock_task = Mock()
+    ai_care._valid_msg_count = 10
+    ai_care._invalid_msg_count = 10
+    ai_care._last_chat_time = 10
+    ai_care._chat_intervals = [10,10]
+    ai_care.set_timer(interval=0.1, function=mock_task, preserve=True)
+
+    # Actions
+    ai_care.reset()
+    time.sleep(0.2)
+    
+    # Assert
+    assert ai_care._valid_msg_count == 0
+    assert ai_care._invalid_msg_count == 0
+    assert ai_care._last_chat_time is None
+    assert ai_care._chat_intervals == []
+    assert not mock_task.called
+
+def test_check_task_validity():
+    # Setup
+    ai_care = AICare()
+    tasks_validity = []
+    def check_validity(ai_care: AICare, validity_list: list):
+        validity_list.append(ai_care._check_task_validity())
+
+    # Actions
+    ai_care.set_timer(interval=0.1, function=check_validity, args=(ai_care, tasks_validity))
+    ai_care.cancel_current_task()
+    ai_care.set_timer(interval=0.1, function=check_validity, args=(ai_care, tasks_validity))
+    time.sleep(0.2)
+
+    # Assert
+    assert tasks_validity == [False, True]
+
+def test_ask():
+    # Setup
+    ai_care = AICare()
+    mock_to_llm_method = Mock()
+    mock_to_llm_method.return_value = "AA000101:"
+
+    ai_care._to_llm_method = mock_to_llm_method
+
+    # Actions
+    ai_care.ask(messages_list=[], depth_left=-1)
+
+    # Assert
+    assert not mock_to_llm_method.called
+
+    # Actions
+    with patch('ai_care.ai_care.parse_response') as mock_pares_response, \
+        patch('ai_care.ai_care.choice_execute') as mock_choice_execute:
+        mock_pares_response.return_value = ("01", "")
+        ai_care.ask(messages_list=[])
+
+    # Assert
+    assert mock_to_llm_method.called
+    assert mock_pares_response.called
+    assert mock_choice_execute.called
+    mock_choice_execute.assert_called_with(
+        ai_care=ai_care,
+        choice_code="01",
+        content="",
+        depth_left=ai_care._config["ask_depth"]
+    )
+
+def test_trigger():
+    # Setup
+    ai_care = AICare()
+    mock_ask = Mock()
+    mock_release_detector = Mock()
+    mock_detector = Mock()
+    mock_detector.name = "detector_name"
+    ai_care._tags = {"detector_tag": [mock_detector]}
+    ai_care.ask = mock_ask
+    ai_care.release_detector = mock_release_detector
+    messages_list=[{"role": "ai_care", "content": "content"}]
+
+    # Actions
+    ai_care.trigger(messages_list=messages_list)
+    
+    # Assert
+    mock_ask.assert_called_with(chat_context=None, messages_list=messages_list, depth_left=1)
+    assert not mock_release_detector.called
+
+    # Actions
+    ai_care.trigger(tag="detector_tag")
+    mock_release_detector.assert_called_with("detector_name")
+
+def test_register_detector():
+    # Setup
+    mock_detector = Mock()
+    mock_detector.name = "mock_detector_name"
+    mock_detector.tag = "mock_detector_tag"
+    ai_care = AICare()
+
+    # Actions
+    ai_care.register_detector(mock_detector)
+
+    # Assert
+    assert mock_detector.ai_care == ai_care
+    assert ai_care.detectors["mock_detector_name"] == mock_detector
+    assert ai_care._tags["mock_detector_tag"] == [mock_detector]
+
+def test_release_detector():
+    # Setup
+    ai_care = AICare()
+    det_ann_called_list = []
+    class TestDetector(Detector):
+        def detect(self) -> bool:
+            det_ann_called_list.append(self.annotation)
+            return True
+    test_detector1 = TestDetector(name="test_detector1", annotation="test_detector1_annotation")
+    test_detector2 = TestDetector(name="test_detector2", annotation="test_detector2_annotation")
+    test_detector3 = TestDetector(name="test_detector3", annotation="test_detector3_annotation")
+
+    # Actions
+    ai_care.register_detector(test_detector1)
+    ai_care.register_detector(test_detector2)
+    ai_care.register_detector(test_detector3)
+    ai_care.release_detector("test_detector1")
+    ai_care.release_detector(["test_detector2", "test_detector3"])
+    time.sleep(0.1)
+
+    # Assert
+    assert set(det_ann_called_list) == {"test_detector1_annotation", "test_detector2_annotation", "test_detector3_annotation"}
