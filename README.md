@@ -1,3 +1,7 @@
+![GitHub License](https://img.shields.io/github/license/happyapplehorse/ai-care)
+![PyPI - Version](https://img.shields.io/pypi/v/ai-care)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/happyapplehorse/ai-care/python-publish.yml?label=build)
+
 # AI-Care
 
 Current AI models are only capable of passively responding to user inquiries

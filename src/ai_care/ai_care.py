@@ -4,7 +4,6 @@ import logging
 import time
 import threading
 from abc import ABCMeta, abstractmethod
-from threading import Thread
 from typing import Callable, Any, Generator, TypedDict, Literal, cast
 
 from .abilities import Ability
@@ -15,12 +14,13 @@ from .render_prompt import render_basic_prompt
 
 logger = logging.getLogger("ai_care")
 ChatContext = Any
+ConfigKey = Literal["delay", "ask_later_count_limit", "ask_depth", "n_chat_intervals"]
 
 
 class AICare:
 
     def __init__(self) -> None:
-        self.timers: dict[int, Timer] = {}
+        self.timers: dict[int, AICareTimer] = {}
         self.detectors: dict[str, Detector] = {}
         self.sensors: dict[str, dict] = {}
         self.ability: Ability = Ability(self)
@@ -112,8 +112,10 @@ class AICare:
 
     def _check_task_validity(self) -> bool:
         thread_instance = threading.current_thread()
-        assert isinstance(thread_instance, Timer)
-        _task_num = thread_instance._task_num
+        if isinstance(thread_instance, AICareTimer) or isinstance(thread_instance, AICareThread):
+            _task_num = thread_instance._task_num
+        else:
+            _task_num = self._task_num
         if _task_num < self._task_num:
             return False
         else:
@@ -148,7 +150,7 @@ class AICare:
             self._chat_intervals.pop(0)
         self._chat_intervals.append(interval)
 
-    def set_config(self, key: str, value: Any) -> None:
+    def set_config(self, key: ConfigKey, value: Any) -> None:
         # Valid check.
         if key not in {"delay", "ask_later_count_limit", "ask_depth", "n_chat_intervals"}:
             raise TypeError(f"AICare does not accept {key} as a config.")
@@ -167,7 +169,7 @@ class AICare:
         args = args or ()
         kwargs = kwargs or {}
         id = next(self._unique_id)
-        timer = Timer(interval=float(interval), function=self._timer_wrap, args=(function, id, *args), kwargs=kwargs)
+        timer = AICareTimer(interval=float(interval), function=self._timer_wrap, args=(function, id, *args), kwargs=kwargs)
         timer._task_num = task_num or self._get_task_num()
         timer._preserve_ = preserve
         timer.start()
@@ -295,7 +297,9 @@ class AICare:
             if name not in self.detectors:
                 raise ValueError(f"There is no detector named {name}.")
             detector = self.detectors[name]
-            Thread(target=detector.release).start()
+            ai_care_thread = AICareThread(target=detector.release)
+            ai_care_thread._task_num = self._get_task_num()
+            ai_care_thread.start()
 
     def register_sensor(self, name: str, function: Callable[[], Any], annotation: str) -> None:
         if name in self.sensors:
@@ -331,8 +335,14 @@ class AICareContext(TypedDict):
     content: str
 
 
-class Timer(threading.Timer):
+class AICareTimer(threading.Timer):
     def __init__(self, *args, preserve: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
         self._preserve_: bool = preserve
+        self._task_num: int = 0
+
+
+class AICareThread(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._task_num: int = 0
