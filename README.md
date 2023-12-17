@@ -1,6 +1,7 @@
 ![GitHub License](https://img.shields.io/github/license/happyapplehorse/ai-care)
 ![PyPI - Version](https://img.shields.io/pypi/v/ai-care)
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/happyapplehorse/ai-care/python-publish.yml?label=build)
+![Codecov](https://img.shields.io/codecov/c/github/happyapplehorse/ai-care)
 
 # AI-Care
 
