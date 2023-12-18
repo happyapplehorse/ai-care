@@ -160,7 +160,7 @@ class Ability:
                 ],
                 depth_left = _depth_left - 1,
             )
-        not_existed_sensors_set = set(self.ai_care.sensors) - set(sensors)
+        not_existed_sensors_set = set(sensors) - set(self.ai_care.sensors)
         if not_existed_sensors_set:
             self.ai_care.ask(
                 messages_list=[
@@ -171,6 +171,7 @@ class Ability:
                 ],
                 depth_left = _depth_left - 1,
             )
+            return
         self.ai_care.set_timer(
             interval=delay,
             function=detect_env_callback,
@@ -197,7 +198,7 @@ class Ability:
     def release_detector(self, delay: int | float, detectors: list[str], _depth_left: int) -> None:
         def release_detector_callback(detectors_list: list[str]):
             self.ai_care.release_detector(detectors_list)
-        not_existed_detectors_set = set(self.ai_care.detectors) - set(detectors)
+        not_existed_detectors_set = set(detectors) - set(self.ai_care.detectors)
         if not_existed_detectors_set:
             self.ai_care.ask(
                 messages_list=[
@@ -208,6 +209,7 @@ class Ability:
                 ],
                 depth_left = _depth_left - 1,
             )
+            return
         self.ai_care.set_timer(interval=delay, function=release_detector_callback, args=(detectors,))
 
     @_ability(
@@ -261,7 +263,7 @@ class Ability:
     )
     @_auto_depth(depth_param_name="_depth_left")
     def cyclic_detection(self, interval: int | float, detectors: list[str], _depth_left) -> None:
-        not_existed_detectors_set = set(self.ai_care.detectors) - set(detectors)
+        not_existed_detectors_set = set(detectors) - set(self.ai_care.detectors)
         if not_existed_detectors_set:
             self.ai_care.ask(
                 messages_list=[
@@ -272,6 +274,7 @@ class Ability:
                 ],
                 depth_left = _depth_left - 1,
             )
+            return
         def repeat_interval(interval: float):
             while True:
                 yield interval

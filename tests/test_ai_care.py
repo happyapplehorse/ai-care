@@ -13,11 +13,11 @@ def test_set_timer():
     callback_kwargs = {"kwarg1": "value1", "kwarg2": "value2"}
 
     # Actions
-    timer_id = ai_care.set_timer(interval=1, function=callback, args=callback_args, kwargs=callback_kwargs)
+    timer_id = ai_care.set_timer(interval=0.2, function=callback, args=callback_args, kwargs=callback_kwargs)
 
     # Assert
     assert timer_id in ai_care.timers
-    time.sleep(0.9)
+    time.sleep(0.1)
     assert not callback.called
     time.sleep(0.2)
     assert callback.called
@@ -34,18 +34,18 @@ def test_timer_cancel():
     callback_kwargs = {"kwarg1": "value1", "kwarg2": "value2"}
 
     # Actions
-    timer_id = ai_care.set_timer(interval=1, function=callback, args=callback_args, kwargs=callback_kwargs)
+    timer_id = ai_care.set_timer(interval=0.2, function=callback, args=callback_args, kwargs=callback_kwargs)
 
     # Assert
     assert timer_id in ai_care.timers
 
     # Actions
-    time.sleep(0.5)
+    time.sleep(0.1)
     ai_care.timer_cancel(timer_id)
 
     # Assert
     assert timer_id not in ai_care.timers
-    time.sleep(0.6)
+    time.sleep(0.2)
     assert not callback.called
 
 def test_set_guide():
@@ -70,16 +70,16 @@ def test_task_num():
         flag = task_num
     
     # Actions
-    ai_care.set_timer(interval=0.2, function=callback, args=(ai_care,), task_num=3)
-    time.sleep(0.4)
+    ai_care.set_timer(interval=0.1, function=callback, args=(ai_care,), task_num=3)
+    time.sleep(0.2)
 
     # Assert
     assert ai_care._get_task_num() == 5
     assert flag == 3
 
     # Actions
-    ai_care.set_timer(interval=0.2, function=callback, args=(ai_care,))
-    time.sleep(0.4)
+    ai_care.set_timer(interval=0.1, function=callback, args=(ai_care,))
+    time.sleep(0.2)
 
     # Assert
     assert flag == 5
@@ -285,3 +285,57 @@ def test_release_detector():
 
     # Assert
     assert set(det_ann_called_list) == {"test_detector1_annotation", "test_detector2_annotation", "test_detector3_annotation"}
+
+def test_register_sensor():
+    # Setup
+    ai_care = AICare()
+    mock_sensor = Mock()
+    mock_sensor.return_value = 10
+
+    # Actions
+    ai_care.register_sensor(name="mock_sensor", function=mock_sensor, annotation="mock_sensor_annotation")
+
+    # Assert
+    assert ai_care.sensors["mock_sensor"] == {"name": "mock_sensor", "function": mock_sensor, "annotation": "mock_sensor_annotation"}
+
+def test_get_sensor_data():
+    # Setup
+    ai_care = AICare()
+    mock_sensor = Mock()
+    mock_sensor.return_value = 10
+
+    # Actions
+    ai_care.register_sensor(name="mock_sensor", function=mock_sensor, annotation="mock_sensor_annotation")
+
+    # Assert
+    assert ai_care.get_sensor_data("mock_sensor") == 10
+
+def test_set_cyclic_detection():
+    # Setup
+    ai_care = AICare()
+    mock_release_detector_method_1 = Mock()
+    ai_care.release_detector = mock_release_detector_method_1
+
+    # Actions
+    ai_care.set_cyclic_detection(detectors=["fake_release_detector"], interval_gen=(0.1 for _ in range(3)))
+    time.sleep(0.6)
+
+    # Assert
+    assert mock_release_detector_method_1.called
+    assert mock_release_detector_method_1.call_count == 3
+    
+    # Setup
+    mock_release_detector_method_2 = Mock()
+    ai_care.release_detector = mock_release_detector_method_2
+    ai_care.to_llm_method = Mock()
+
+    # Actions
+    with patch('ai_care.ai_care.parse_response') as mock_pares_response, patch('ai_care.ai_care.choice_execute'):
+        mock_pares_response.return_value = ("01", "fake content")
+        ai_care.set_cyclic_detection(detectors=["fake_release_detector"], interval_gen=(x for x in [0.1, 0.1, 0.2, 0.1, 0.1]))
+        time.sleep(0.3)
+        ai_care.trigger(messages_list=[{"role": "ai_care", "content": ""}])
+        time.sleep(0.4)
+
+    # Assert
+    assert mock_release_detector_method_2.call_count == 2

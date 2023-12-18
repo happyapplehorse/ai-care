@@ -39,7 +39,7 @@ class AICare:
         self._chat_intervals: list[float] = []
         self._tags: dict[str, list[Detector]] = {}
         self._config: dict[str, Any] = {"delay": 100, "ask_later_count_limit": 1, "ask_depth": 1, "n_chat_intervals": 20}
-        self._ask_later_count_left = 1
+        self._ask_later_count_left = self._config["ask_later_count_limit"]
         self._valid_msg_count: int = 0
         self._invalid_msg_count: int = 0
         self._stream_mode: bool = True
