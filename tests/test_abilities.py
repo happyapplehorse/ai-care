@@ -151,8 +151,9 @@ def test_cyclic_detection():
     
     # Actions
     ai_care.ability.abilities["cyclic_detection"](interval=0.1, detectors=["mock_detector"], _depth_left=1)
-    time.sleep(0.55)
+    time.sleep(0.35)
     ai_care.clear_timer()
+    time.sleep(0.3)
 
     # Assert
-    assert mock_release_detector.call_count == 5
+    assert mock_release_detector.call_count == 3
