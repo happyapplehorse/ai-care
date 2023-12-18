@@ -3,6 +3,49 @@ from unittest.mock import Mock
 from ai_care.choice_execute import choice_execute
 
 
+def test_choice_execute_choice_error():
+    # Setup
+    mock_ai_care = Mock()
+
+    # Actions
+    choice_execute(ai_care=mock_ai_care, choice_code="EE", content="", depth_left=1)
+
+    # Assert
+    _, called_kwargs = mock_ai_care.ask.call_args
+    assert "Your choice code EE is not correct." in called_kwargs["messages_list"][1]["content"]
+
+def test_choice_execute_parse_json_error():
+    # Setup
+    mock_ai_care = Mock()
+    mock_ai_care.ability.abilities = {
+        "stay_silent": Mock(),
+        "speak_now": Mock(),
+        "speak_after": Mock()
+    }
+
+    # Actions
+    choice_execute(ai_care=mock_ai_care, choice_code="03", content="{wrong json string", depth_left=1)
+
+    # Assert
+    _, called_kwargs = mock_ai_care.ask.call_args
+    assert "Failed to correctly parse the parameter." in called_kwargs["messages_list"][0]["content"]
+
+def test_choice_execute_param_not_dict_error():
+    # Setup
+    mock_ai_care = Mock()
+    mock_ai_care.ability.abilities = {
+        "stay_silent": Mock(),
+        "speak_now": Mock(),
+        "speak_after": Mock()
+    }
+
+    # Actions
+    choice_execute(ai_care=mock_ai_care, choice_code="03", content='[{"role": "ai_care"}]', depth_left=1)
+
+    # Assert
+    _, called_kwargs = mock_ai_care.ask.call_args
+    assert "The parameters should be a dictionary in JSON format." in called_kwargs["messages_list"][0]["content"]
+
 def test_choice_execute_error():
     # Setup
     ai_care = Mock()
@@ -24,9 +67,7 @@ def test_choice_execute_stay_silent():
         "speak_now": mock_speak_now_method,
         "speak_after": mock_speak_after_method
     }
-
     depth_left = 3
-    
     choice_code = "01"
     content = "content"
 
@@ -59,9 +100,7 @@ def test_choice_execute_speak_now():
         },
     ]
     mock_speak_now_method._auto_depth_ = False
-
     depth_left = 3
-    
     choice_code = "02"
     content = "content"
 
@@ -102,9 +141,7 @@ def test_choice_execute_speak_after():
         },
     ]
     mock_speak_after_method._auto_depth_ = False
-
     depth_left = 3
-    
     choice_code = "03"
     content = '{"delay": 1, "message": "message content"}'
 
