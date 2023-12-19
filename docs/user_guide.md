@@ -1,3 +1,3 @@
 # AI-Care User Guide
 
-## AI-Care settings
+The user manual will soon appear here.

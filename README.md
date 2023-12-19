@@ -1,8 +1,10 @@
 # AI-Care
 ![GitHub License](https://img.shields.io/github/license/happyapplehorse/ai-care)
 ![PyPI - Version](https://img.shields.io/pypi/v/ai-care)
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/happyapplehorse/ai-care/python-publish.yml?label=build)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/happyapplehorse/ai-care/python-publish.yml?logo=pypi)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/happyapplehorse/ai-care/codecov.yml?logo=pytest&label=test)
 [![codecov](https://codecov.io/gh/happyapplehorse/ai-care/graph/badge.svg?token=G091OOWBDF)](https://codecov.io/gh/happyapplehorse/ai-care)
+![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)
 
 Current AI models are only capable of passively responding to user inquiries
 and lack the ability to initiate conversations.
@@ -74,4 +76,4 @@ ai_care.set_config(key="n_chat_intervals", value=20)
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](./LICENSE).
