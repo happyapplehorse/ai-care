@@ -1,3 +1,4 @@
+import pytest
 import textwrap
 from enum import Enum
 from unittest.mock import Mock, patch
@@ -5,6 +6,12 @@ from unittest.mock import Mock, patch
 from ai_care import AICare
 from ai_care.render_prompt import _render_ability_description, render_basic_prompt
 
+
+@pytest.fixture
+def ai_care():
+    ai_care = AICare()
+    yield ai_care
+    ai_care.clear_timer(clear_preserved=True, default_task_num_authority_external="Highest")
 
 def test_render_ability_description():
     
@@ -43,7 +50,7 @@ def test_render_ability_description():
         },
     ]
     
-    # Actions
+    # Action
     with patch('ai_care.render_prompt.Choice', MockChoice):
         prompt1 = _render_ability_description(ability1)
         prompt2 = _render_ability_description(ability2)
@@ -84,7 +91,6 @@ def test_render_ability_description():
         """
     )
 
-def test_render_basic_prompt():
-    ai_care = AICare()
+def test_render_basic_prompt(ai_care):
     prompt = render_basic_prompt(ai_care)
     assert isinstance(prompt, str)
