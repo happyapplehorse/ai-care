@@ -164,6 +164,7 @@ class AICare:
         kwargs: dict | None = None,
         *,
         preserve: bool = False,
+        daemon: bool = True,
         task_num: int | None = None,
     ) -> int:
         args = args or ()
@@ -172,6 +173,7 @@ class AICare:
         timer = AICareTimer(interval=float(interval), function=self._timer_wrap, args=(function, id, *args), kwargs=kwargs)
         timer._task_num = task_num or self._get_task_num()
         timer._preserve_ = preserve
+        timer.daemon = daemon
         timer.start()
         self.timers[id] = timer
         return id
@@ -336,10 +338,11 @@ class AICareContext(TypedDict):
 
 
 class AICareTimer(threading.Timer):
-    def __init__(self, *args, preserve: bool = False, **kwargs):
+    def __init__(self, *args, preserve: bool = False, daemon: bool = True, **kwargs):
         super().__init__(*args, **kwargs)
         self._preserve_: bool = preserve
         self._task_num: int = 0
+        self.daemon = daemon
 
 
 class AICareThread(threading.Thread):

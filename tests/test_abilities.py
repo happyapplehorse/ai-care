@@ -38,7 +38,7 @@ def test_auto_register_abilities():
 
     assert result == ["Fake ability"]
 
-def test_abilities(ai_care):
+def test_abilities(ai_care: AICare):
     # Setup
     response = (x for x in ['AA0', '0030', '3:{"delay": 0.2, ', '"message": ', '"hi"}'])
     ai_care.set_config(key="delay", value=0.1)
@@ -59,7 +59,7 @@ def test_abilities(ai_care):
     called_args, _ = to_user_method.call_args
     assert ''.join(x for x in called_args[0]) == "hi"
 
-def test_detect_env(ai_care):
+def test_detect_env(ai_care: AICare):
     # Setup
     ai_care.ask = Mock()
     mock_sensor = Mock()
@@ -83,7 +83,7 @@ def test_detect_env(ai_care):
     _, called_kwargs = ai_care.ask.call_args
     assert "There are no {'mock_sensor_not_existed'} sensor." in called_kwargs["messages_list"][0]["content"]
 
-def test_release_detector(ai_care):
+def test_release_detector(ai_care: AICare):
     # Setup
     ai_care.ask = Mock()
     mock_detector = Mock()
@@ -106,7 +106,7 @@ def test_release_detector(ai_care):
     # Assert
     mock_release_detector.assert_called_with(["mock_detector"])
 
-def test_ask_later(ai_care):
+def test_ask_later(ai_care: AICare):
     # Setup
     ai_care.ask = Mock()
 
@@ -134,7 +134,7 @@ def test_ask_later(ai_care):
     # Assert
     assert ai_care.ask.call_count == 1
 
-def test_cyclic_detection(ai_care):
+def test_cyclic_detection(ai_care: AICare):
     # Setup
     ai_care.ask = Mock()
     mock_detector = Mock()

@@ -11,7 +11,7 @@ def ai_care():
     yield ai_care
     ai_care.clear_timer(clear_preserved=True, default_task_num_authority_external="Highest")
 
-def test_parse_response(ai_care):
+def test_parse_response(ai_care: AICare):
     # Setup
     response1 = "AA000101:stay silent"
     response2 = "AA000202:speak content"

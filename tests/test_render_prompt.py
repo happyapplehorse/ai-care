@@ -91,6 +91,6 @@ def test_render_ability_description():
         """
     )
 
-def test_render_basic_prompt(ai_care):
+def test_render_basic_prompt(ai_care: AICare):
     prompt = render_basic_prompt(ai_care)
     assert isinstance(prompt, str)
