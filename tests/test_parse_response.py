@@ -1,12 +1,18 @@
+import pytest
 from typing import Generator
 
 from ai_care import AICare
 from ai_care.parse_response import parse_response, _extract_info
 
 
-def test_parse_response():
-    # Setup
+@pytest.fixture
+def ai_care():
     ai_care = AICare()
+    yield ai_care
+    ai_care.clear_timer(clear_preserved=True, default_task_num_authority_external="Highest")
+
+def test_parse_response(ai_care: AICare):
+    # Setup
     response1 = "AA000101:stay silent"
     response2 = "AA000202:speak content"
     response3 = "AA000303:content"
@@ -15,7 +21,7 @@ def test_parse_response():
     response_stream3 = (x for x in ["AA", "0002", "02", ":spe", "ak ", "now"])
     response_stream4 = (x for x in ["AA", "0003", "03", ":parameter ", "content"])
     
-    # Actions
+    # Action
     choice_code1, content1 = parse_response(ai_care=ai_care, response=response1)
     choice_code2, content2 = parse_response(ai_care=ai_care, response=response2)
     choice_code3, content3 = parse_response(ai_care=ai_care, response=response3)
@@ -48,7 +54,7 @@ def test_extract_info():
     case3 = "ABCd4560"
     case4 = "AA000202:content"
 
-    # Actions
+    # Action
     code1, content1 = _extract_info(case1)
     code2, content2 = _extract_info(case2)
     code3, content3 = _extract_info(case3)

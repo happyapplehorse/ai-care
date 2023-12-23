@@ -7,7 +7,7 @@ def test_choice_execute_choice_error():
     # Setup
     mock_ai_care = Mock()
 
-    # Actions
+    # Action
     choice_execute(ai_care=mock_ai_care, choice_code="EE", content="", depth_left=1)
 
     # Assert
@@ -23,7 +23,7 @@ def test_choice_execute_parse_json_error():
         "speak_after": Mock()
     }
 
-    # Actions
+    # Action
     choice_execute(ai_care=mock_ai_care, choice_code="03", content="{wrong json string", depth_left=1)
 
     # Assert
@@ -39,7 +39,7 @@ def test_choice_execute_param_not_dict_error():
         "speak_after": Mock()
     }
 
-    # Actions
+    # Action
     choice_execute(ai_care=mock_ai_care, choice_code="03", content='[{"role": "ai_care"}]', depth_left=1)
 
     # Assert
@@ -48,13 +48,13 @@ def test_choice_execute_param_not_dict_error():
 
 def test_choice_execute_error():
     # Setup
-    ai_care = Mock()
+    mock_ai_care = Mock()
 
-    # Actions
-    choice_execute(ai_care=ai_care, choice_code="00", content="", depth_left=1)
+    # Action
+    choice_execute(ai_care=mock_ai_care, choice_code="00", content="", depth_left=1)
 
     # Assert
-    ai_care.ask.assert_called_with(messages_list=[], depth_left=0)
+    mock_ai_care.ask.assert_called_with(messages_list=[], depth_left=0)
 
 def test_choice_execute_stay_silent():
     # Setup
@@ -71,7 +71,7 @@ def test_choice_execute_stay_silent():
     choice_code = "01"
     content = "content"
 
-    # Actions
+    # Action
     choice_execute(ai_care=mock_ai_care, choice_code=choice_code, content=content, depth_left=depth_left)
 
     # Assert
@@ -104,7 +104,7 @@ def test_choice_execute_speak_now():
     choice_code = "02"
     content = "content"
 
-    # Actions
+    # Action
     choice_execute(ai_care=mock_ai_care, choice_code=choice_code, content=content, depth_left=depth_left)
 
     # Assert
@@ -145,7 +145,7 @@ def test_choice_execute_speak_after():
     choice_code = "03"
     content = '{"delay": 1, "message": "message content"}'
 
-    # Actions
+    # Action
     choice_execute(ai_care=mock_ai_care, choice_code=choice_code, content=content, depth_left=depth_left)
 
     # Assert
