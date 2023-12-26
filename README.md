@@ -44,6 +44,8 @@ def to_user_method(to_user_message: str | Generator[str, None, None]) -> None:
 
 2. Instantiate AICare:
 ```python
+from ai_care import AICare
+
 ai_care = AICare()
 ```
 
@@ -61,6 +63,9 @@ ai_care.chat_update(chat_context)
 
 ## AI-Care settings
 ```python
+# Set guidance information
+ai_care.set_guide(guide="your guide")
+
 # Set how long before AI-Care is activated
 ai_care.set_config(key="delay", value=60)
 
