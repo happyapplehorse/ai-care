@@ -45,13 +45,15 @@ class AICare:
         self._stream_mode: bool = True
         self._ask_context: list[AICareContext] = []
         self._task_num: int = 1
+        self._cancel_task_lock = threading.Lock()
     
     @property
     def health(self) -> float:
         return self._valid_msg_count / (self._valid_msg_count + self._invalid_msg_count)
 
     def cancel_current_task(self):
-        self._task_num += 1
+        with self._cancel_task_lock:
+            self._task_num += 1
 
     def reset(self) -> None:
         self._valid_msg_count = 0
@@ -100,15 +102,16 @@ class AICare:
         return self._to_llm_method(chat_context, messages_list)
 
     def to_user_method(self, message: str | Generator[str, None, None]) -> None:
-        if self._check_task_validity():
-            if isinstance(message, str):
-                self._to_user_method = cast(Callable[[str], None], self._to_user_method)
-                self._to_user_method(message)
-            elif isinstance(message, Generator):
-                self._to_user_method = cast(Callable[[Generator[str, None, None]], None], self._to_user_method)
-                self._to_user_method(message)
-            else:
-                assert False
+        with self._cancel_task_lock:
+            if self._check_task_validity():
+                if isinstance(message, str):
+                    self._to_user_method = cast(Callable[[str], None], self._to_user_method)
+                    self._to_user_method(message)
+                elif isinstance(message, Generator):
+                    self._to_user_method = cast(Callable[[Generator[str, None, None]], None], self._to_user_method)
+                    self._to_user_method(message)
+                else:
+                    assert False
 
     def _check_task_validity(self) -> bool:
         thread_instance = threading.current_thread()
