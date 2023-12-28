@@ -1,4 +1,6 @@
 # AI-Care
+<div align="center"><h3>🤖🌟 "Who cares?! &nbsp;AI care! &nbsp;AI cares about you!" 🌟🤖</h3></div>
+
 ![GitHub License](https://img.shields.io/github/license/happyapplehorse/ai-care)
 ![PyPI - Version](https://img.shields.io/pypi/v/ai-care)
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/happyapplehorse/ai-care/python-publish.yml?logo=pypi)
