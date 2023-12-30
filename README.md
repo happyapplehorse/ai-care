@@ -1,5 +1,5 @@
 # AI-Care
-<div align="center"><h3>🤖🌟 "Who cares?! &nbsp;AI care! &nbsp;AI cares about you!" 🌟🤖</h3></div>
+<div align="center"><h3>🤖🌟 Who cares?! &nbsp;AI care! &nbsp;AI cares about you! 🌟🤖</h3></div>
 
 ![GitHub License](https://img.shields.io/github/license/happyapplehorse/ai-care)
 ![PyPI - Version](https://img.shields.io/pypi/v/ai-care)
@@ -22,6 +22,13 @@ with virtually zero intrusion into the original code.
 This allows for easy integration of AI-Care services into existing systems.
 3. 🌍Model Universality: Compatible with all LLM (Large Language Model) models,
 AI-Care does not rely on function call features or specific ways in which the model is used.
+
+## At a Glance
+
+AI-Care employs a sidecar service model, operating non-intrusively alongside the original system without disrupting
+the existing communication links with LLM. For minimal setup, only the components highlighted in red
+in the diagram are required to be provided.
+![AI-Care Architecture Diagram](https://raw.githubusercontent.com/happyapplehorse/happyapplehorse-assets/main/ai_care/ai_care_architecture.png)
 
 ## Usage
 
